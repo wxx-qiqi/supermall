@@ -1,15 +1,18 @@
 <template>
-    <div id="home">
+    <div id="home" class="wrapper">
         <nav-bar class="home-nav"><div slot="center">购物街</div></nav-bar>
-        <home-swiper :banners="banners" />
-        <recommend-view :recommends="recommends" />
-        <feature-view />
-        <tab-control class="tab-control" :titles="['流行','新款','精选']" />
-        <goods-list :goods="goods['pop'].list" />
+        <scroll class="content">
+            <home-swiper :banners="banners" />
+            <recommend-view :recommends="recommends" />
+            <feature-view />
+            <tab-control class="tab-control" :titles="['流行','新款','精选']" @tabclick="tabclick" />
+            <goods-list :goods="showGoods" />
+        </scroll>
     </div>
 </template>
 <script>
 import NavBar from 'components/common/navbar/NavBar';
+import Scroll from 'components/common/scroll/Scroll';
 
 import TabControl from 'components/content/tabControl/TabControl';
 import GoodsList from 'components/content/goods/GoodsList';
@@ -19,6 +22,7 @@ import RecommendView from './childComps/RecommendView';
 import FeatureView from './childComps/FeatureView';
 
 import { getHomeMultidata,getHomeGoods  } from 'network/home';
+
 
 export default {
     name:'Home',
@@ -39,17 +43,24 @@ export default {
                     page:0,
                     list:[]
                 }
-            }
+            },
+            currentType: 'pop'
+        }
+    },
+    computed:{
+        showGoods(){
+            return this.goods[this.currentType].list
         }
     },
     components:{
         NavBar,
+        Scroll,
+
         TabControl,
         GoodsList,
         HomeSwiper,
         RecommendView,
         FeatureView
-        
     },
     created(){
         //请求多个数据
@@ -60,6 +71,26 @@ export default {
         this.getHomeGoods('sell')
     },
     methods:{
+        /*
+        事件监听的方法
+        */
+       tabclick(index){
+           switch (index) {
+                case 0:
+                    this.currentType='pop';
+                    break;
+                case 1:
+                    this.currentType='new';
+                    break;
+                case 2:
+                    this.currentType='sell';
+                    break;
+           }
+       },
+
+        /*
+        网络请求相关的方法
+        */
         getHomeMultidata(){
              getHomeMultidata().then(res=>{
                 this.banners=res.data.data.banner.list;
@@ -78,9 +109,13 @@ export default {
     }
 }
 </script>
+// scoped是指作用域，当前页面有效
+//vh是指视口高度 100vh是指100%高度
 <style scoped>
     #home{
+        position: relative;
         padding-top: 44px;
+        height: 100vh;
     }
     .home-nav {
         position: fixed;
@@ -95,5 +130,17 @@ export default {
     .tab-control{
         z-index: 9;
     }
-    
+    .content{
+        position: absolute;
+        overflow: hidden;
+        top: 44px;
+        bottom: 49px;
+        left: 0;
+        right: 0;
+    }
+    /* .content{
+        height: calc(100%-93px);
+        overflow: hidden;
+        margin-top: 44px;
+    } */
 </style>
