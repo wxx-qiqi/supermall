@@ -1,13 +1,19 @@
 <template>
     <div id="home" class="wrapper">
         <nav-bar class="home-nav"><div slot="center">购物街</div></nav-bar>
-        <scroll class="content">
+        <scroll class="content" ref="scroll" :probe-type="3" @scroll="contentScroll">
             <home-swiper :banners="banners" />
             <recommend-view :recommends="recommends" />
             <feature-view />
-            <tab-control class="tab-control" :titles="['流行','新款','精选']" @tabclick="tabclick" />
+            <tab-control class="tab-control"
+             :titles="['流行','新款','精选']"
+             @tabclick="tabclick"
+             :pull-up-load="true" 
+             @pullingUp="loadMore"/>
             <goods-list :goods="showGoods" />
         </scroll>
+        <!-- 原生组件能够监听点击 组件不能直接监听点击 必须是@click.native才能监听组件 -->
+        <back-top @click.native="backClick" v-show="isShowBackTop" />
     </div>
 </template>
 <script>
@@ -16,6 +22,7 @@ import Scroll from 'components/common/scroll/Scroll';
 
 import TabControl from 'components/content/tabControl/TabControl';
 import GoodsList from 'components/content/goods/GoodsList';
+import BackTop from 'components/content/backTop/BackTop';
 
 import HomeSwiper from './childComps/HomeSwiper';
 import RecommendView from './childComps/RecommendView';
@@ -44,7 +51,8 @@ export default {
                     list:[]
                 }
             },
-            currentType: 'pop'
+            currentType: 'pop',
+            isShowBackTop:false
         }
     },
     computed:{
@@ -58,6 +66,8 @@ export default {
 
         TabControl,
         GoodsList,
+        BackTop,
+
         HomeSwiper,
         RecommendView,
         FeatureView
@@ -69,8 +79,27 @@ export default {
         this.getHomeGoods('pop'),
         this.getHomeGoods('new'),
         this.getHomeGoods('sell')
+        
+    },
+    mounted(){
+        const refresh=this.debounce(this.$refs.scroll.refresh,500);
+        //监听图片中的item加载完成
+        this.$bus.$on('itemImageLoad',()=>{
+            refresh();
+        })
     },
     methods:{
+        
+        //防抖函数debounce  节流函数throttle
+        debounce(func,delay){
+            let timer=null;
+            return function(...args){
+                if(timer) clearTimeout(timer);
+                timer=setTimeout(()=>{
+                    func.apply(this,args)
+                },delay)
+            }
+        },
         /*
         事件监听的方法
         */
@@ -86,6 +115,21 @@ export default {
                     this.currentType='sell';
                     break;
            }
+
+       },
+       //返回顶部
+       backClick(){
+           //拿到对应组件 并且访问对应的属性和方法
+           // 通过$refs拿到组件中的对象
+            this.$refs.scroll.scrollTo(0, 0, 500);
+       },
+       //显示导航条
+       contentScroll(position){
+           //console.log(position);
+           this.isShowBackTop=-position.y>1000;
+       },
+       loadMore(){
+           return true;
        },
 
         /*
@@ -139,7 +183,7 @@ export default {
         right: 0;
     }
     /* .content{
-        height: calc(100%-93px);
+        height: calc(100% - 93px);
         overflow: hidden;
         margin-top: 44px;
     } */
